@@ -1,0 +1,4 @@
+".\output\STARTUP.obj",
+".\output\main.obj" 
+TO ".\output\key" 
+PRINT(".\key.m51") RAMSIZE(256) 

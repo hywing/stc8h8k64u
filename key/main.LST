@@ -1,0 +1,76 @@
+C51 COMPILER V9.01   MAIN                                                                  07/02/2023 17:34:13 PAGE 1   
+
+
+C51 COMPILER V9.01, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\output\main.obj
+COMPILER INVOKED BY: D:\software\keil4.0\C51\BIN\C51.EXE main.c BROWSE DEBUG OBJECTEXTEND OBJECT(.\output\main.obj)
+
+line level    source
+
+   1          #include<STC8H.H>
+   2          #include "intrins.h"
+   3          
+   4          
+   5          void Delay20ms()                //@24.000MHz
+   6          {
+   7   1              unsigned char data i, j, k;
+   8   1      
+   9   1              _nop_();
+  10   1              i = 3;
+  11   1              j = 112;
+  12   1              k = 91;
+  13   1              do
+  14   1              {
+  15   2                      do
+  16   2                      {
+  17   3                              while (--k);
+  18   3                      } while (--j);
+  19   2              } while (--i);
+  20   1      }
+  21          
+  22          void main(void)
+  23          {
+  24   1              P0M0 = 0x00;    P0M1 = 0x00;
+  25   1          P1M0 = 0x00;    P1M1 = 0x00;
+  26   1          P2M0 = 0x00;    P2M1 = 0x00;
+  27   1          P3M0 = 0x00;    P3M1 = 0x00;
+  28   1          P4M0 = 0x00;    P4M1 = 0x00;
+  29   1          P5M0 = 0x00;    P5M1 = 0x00;
+  30   1          P6M0 = 0x00;    P6M1 = 0x00;
+  31   1          P7M0 = 0x00;    P7M1 = 0x00;
+  32   1              while(1)
+  33   1              {
+  34   2                      if(P21 == 0) 
+  35   2                      {
+  36   3                              Delay20ms();
+  37   3                              if(P21 == 0)
+  38   3                              {
+  39   4                                      P20 = 0;
+  40   4                              }
+  41   3                              else 
+  42   3                              {
+  43   4                                  P20 = 1;
+  44   4                              }
+  45   3                      }
+  46   2                      else 
+  47   2                      {
+  48   3                              P20 = 1;
+  49   3                      }       
+  50   2              }
+  51   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     68    ----
+C51 COMPILER V9.01   MAIN                                                                  07/02/2023 17:34:13 PAGE 2   
+
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
