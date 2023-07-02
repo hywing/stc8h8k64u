@@ -1,0 +1,232 @@
+BL51 BANKED LINKER/LOCATER V6.22                                                        07/02/2023  18:34:10  PAGE 1
+
+
+BL51 BANKED LINKER/LOCATER V6.22, INVOKED BY:
+D:\SOFTWARE\KEIL4.0\C51\BIN\BL51.EXE .\output\STARTUP.obj, .\output\main.obj TO .\output\pwm PRINT (.\pwm.m51) RAMSIZE (
+>> 256)
+
+
+MEMORY MODEL: SMALL
+
+
+INPUT MODULES INCLUDED:
+  .\output\STARTUP.obj (?C_STARTUP)
+  .\output\main.obj (MAIN)
+
+
+LINK MAP OF MODULE:  .\output\pwm (?C_STARTUP)
+
+
+            TYPE    BASE      LENGTH    RELOCATION   SEGMENT NAME
+            -----------------------------------------------------
+
+            * * * * * * *   D A T A   M E M O R Y   * * * * * * *
+            REG     0000H     0008H     ABSOLUTE     "REG BANK 0"
+            DATA    0008H     0008H     UNIT         ?DT?MAIN
+                    0010H     0010H                  *** GAP ***
+            BIT     0020H.0   0000H.5   UNIT         ?BI?MAIN
+                    0020H.5   0000H.3                *** GAP ***
+            IDATA   0021H     0001H     UNIT         ?STACK
+
+            * * * * * * *   C O D E   M E M O R Y   * * * * * * *
+            CODE    0000H     0003H     ABSOLUTE     
+                    0003H     0008H                  *** GAP ***
+            CODE    000BH     0003H     ABSOLUTE     
+            CODE    000EH     00ABH     UNIT         ?PR?MAIN?MAIN
+            CODE    00B9H     0068H     UNIT         ?PR?TIMER0?MAIN
+            CODE    0121H     0023H     UNIT         ?PR?UPDATEPWM?MAIN
+            CODE    0144H     000CH     UNIT         ?C_C51STARTUP
+
+
+
+OVERLAY MAP OF MODULE:   .\output\pwm (?C_STARTUP)
+
+
+SEGMENT
+  +--> CALLED SEGMENT
+---------------------
+?C_C51STARTUP
+  +--> ?PR?MAIN?MAIN
+
+*** NEW ROOT ***************************************************
+
+?PR?TIMER0?MAIN
+  +--> ?PR?UPDATEPWM?MAIN
+
+
+
+SYMBOL TABLE OF MODULE:  .\output\pwm (?C_STARTUP)
+
+  VALUE           TYPE          NAME
+  ----------------------------------
+BL51 BANKED LINKER/LOCATER V6.22                                                      07/02/2023  18:34:10  PAGE 2
+
+
+
+  -------         MODULE        ?C_STARTUP
+  C:0144H         SEGMENT       ?C_C51STARTUP
+  I:0021H         SEGMENT       ?STACK
+  C:0000H         PUBLIC        ?C_STARTUP
+  D:00E0H         SYMBOL        ACC
+  D:00F0H         SYMBOL        B
+  D:0083H         SYMBOL        DPH
+  D:0082H         SYMBOL        DPL
+  N:0000H         SYMBOL        IBPSTACK
+  N:0100H         SYMBOL        IBPSTACKTOP
+  N:0080H         SYMBOL        IDATALEN
+  C:0147H         SYMBOL        IDATALOOP
+  N:0000H         SYMBOL        PBPSTACK
+  N:0100H         SYMBOL        PBPSTACKTOP
+  N:0000H         SYMBOL        PDATALEN
+  N:0000H         SYMBOL        PDATASTART
+  N:0000H         SYMBOL        PPAGE
+  N:0000H         SYMBOL        PPAGEENABLE
+  D:00A0H         SYMBOL        PPAGE_SFR
+  D:0081H         SYMBOL        SP
+  C:0144H         SYMBOL        STARTUP1
+  N:0000H         SYMBOL        XBPSTACK
+  N:0000H         SYMBOL        XBPSTACKTOP
+  N:0000H         SYMBOL        XDATALEN
+  N:0000H         SYMBOL        XDATASTART
+  C:0000H         LINE#         126
+  C:0144H         LINE#         133
+  C:0146H         LINE#         134
+  C:0147H         LINE#         135
+  C:0148H         LINE#         136
+  C:014AH         LINE#         185
+  C:014DH         LINE#         196
+  -------         ENDMOD        ?C_STARTUP
+
+  -------         MODULE        MAIN
+  C:0000H         SYMBOL        _ICE_DUMMY_
+  D:0093H         PUBLIC        P0M1
+  D:0092H         PUBLIC        P1M0
+  D:0096H         PUBLIC        P2M0
+  D:0091H         PUBLIC        P1M1
+  D:0080H         PUBLIC        P0
+  D:00B2H         PUBLIC        P3M0
+  D:0095H         PUBLIC        P2M1
+  D:0090H         PUBLIC        P1
+  D:00B4H         PUBLIC        P4M0
+  D:00B1H         PUBLIC        P3M1
+  D:00A0H         PUBLIC        P2
+  B:0020H.0       PUBLIC        PWM1_Flag
+  D:00CAH         PUBLIC        P5M0
+  D:00B3H         PUBLIC        P4M1
+  D:00B0H         PUBLIC        P3
+  B:0020H.1       PUBLIC        PWM2_Flag
+  D:00CCH         PUBLIC        P6M0
+  D:00C9H         PUBLIC        P5M1
+  D:00C0H         PUBLIC        P4
+  B:0020H.2       PUBLIC        PWM3_Flag
+BL51 BANKED LINKER/LOCATER V6.22                                                      07/02/2023  18:34:10  PAGE 3
+
+
+  D:00E2H         PUBLIC        P7M0
+  D:00CBH         PUBLIC        P6M1
+  D:00C8H         PUBLIC        P5
+  B:0020H.3       PUBLIC        PWM4_Flag
+  D:00E1H         PUBLIC        P7M1
+  B:00A8H.7       PUBLIC        EA
+  D:00BAH         PUBLIC        P_SW2
+  C:0121H         PUBLIC        UpdatePwm
+  C:000EH         PUBLIC        main
+  D:0008H         PUBLIC        PWM1_Duty
+  D:000AH         PUBLIC        PWM2_Duty
+  D:000CH         PUBLIC        PWM3_Duty
+  D:000EH         PUBLIC        PWM4_Duty
+  B:0020H.4       PUBLIC        B_1ms
+  D:008EH         PUBLIC        AUXR
+  B:00A8H.1       PUBLIC        ET0
+  D:008CH         PUBLIC        TH0
+  D:008AH         PUBLIC        TL0
+  C:00B9H         PUBLIC        timer0
+  B:0088H.4       PUBLIC        TR0
+  D:0094H         PUBLIC        P0M0
+  -------         PROC          MAIN
+  C:000EH         LINE#         206
+  C:000EH         LINE#         207
+  C:000EH         LINE#         208
+  C:0011H         LINE#         210
+  C:0016H         LINE#         211
+  C:001AH         LINE#         212
+  C:001EH         LINE#         213
+  C:0022H         LINE#         214
+  C:0026H         LINE#         215
+  C:002AH         LINE#         216
+  C:002EH         LINE#         217
+  C:0032H         LINE#         219
+  C:0034H         LINE#         220
+  C:0036H         LINE#         221
+  C:0038H         LINE#         222
+  C:003AH         LINE#         224
+  C:003EH         LINE#         225
+  C:0043H         LINE#         226
+  C:0048H         LINE#         227
+  C:004DH         LINE#         230
+  C:0050H         LINE#         231
+  C:0053H         LINE#         232
+  C:0056H         LINE#         233
+  C:0058H         LINE#         234
+  C:005AH         LINE#         236
+  C:005EH         LINE#         237
+  C:0060H         LINE#         238
+  C:0066H         LINE#         239
+  C:0068H         LINE#         240
+  C:006AH         LINE#         241
+  C:006CH         LINE#         242
+  C:0070H         LINE#         243
+  C:0072H         LINE#         245
+  C:0078H         LINE#         246
+  C:007CH         LINE#         248
+BL51 BANKED LINKER/LOCATER V6.22                                                      07/02/2023  18:34:10  PAGE 4
+
+
+  C:0081H         LINE#         249
+  C:0085H         LINE#         250
+  C:0089H         LINE#         251
+  C:008DH         LINE#         252
+  C:0091H         LINE#         253
+  C:0095H         LINE#         254
+  C:0099H         LINE#         255
+  C:009DH         LINE#         256
+  C:00A1H         LINE#         258
+  C:00A4H         LINE#         259
+  C:00A8H         LINE#         261
+  C:00AEH         LINE#         262
+  C:00B5H         LINE#         265
+  C:00B7H         LINE#         267
+  C:00B7H         LINE#         268
+  C:00B7H         LINE#         269
+  -------         ENDPROC       MAIN
+  -------         PROC          TIMER0
+  C:00B9H         LINE#         274
+  C:00D6H         LINE#         276
+  C:00D9H         LINE#         277
+  C:00D9H         LINE#         278
+  C:00E1H         LINE#         279
+  C:00ECH         LINE#         280
+  C:00EEH         LINE#         282
+  C:00EEH         LINE#         283
+  C:00F6H         LINE#         284
+  C:0103H         LINE#         285
+  C:0103H         LINE#         320
+  C:0106H         LINE#         321
+  -------         ENDPROC       TIMER0
+  -------         PROC          UPDATEPWM
+  C:0121H         LINE#         331
+  C:0121H         LINE#         332
+  C:0121H         LINE#         333
+  C:0127H         LINE#         334
+  C:012BH         LINE#         335
+  C:012FH         LINE#         336
+  C:0133H         LINE#         337
+  C:0137H         LINE#         338
+  C:013BH         LINE#         339
+  C:013FH         LINE#         340
+  C:0143H         LINE#         341
+  -------         ENDPROC       UPDATEPWM
+  -------         ENDMOD        MAIN
+
+Program Size: data=17.5 xdata=0 code=328
+LINK/LOCATE RUN COMPLETE.  0 WARNING(S),  0 ERROR(S)

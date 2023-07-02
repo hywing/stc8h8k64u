@@ -1,0 +1,376 @@
+C51 COMPILER V9.01   MAIN                                                                  07/02/2023 18:34:10 PAGE 1   
+
+
+C51 COMPILER V9.01, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\output\main.obj
+COMPILER INVOKED BY: D:\software\keil4.0\C51\BIN\C51.EXE main.c BROWSE DEBUG OBJECTEXTEND OBJECT(.\output\main.obj)
+
+line level    source
+
+   1          /*---------------------------------------------------------------------*/
+   2          /* --- STC MCU Limited ------------------------------------------------*/
+   3          /* --- STC 1T Series MCU Demo Programme -------------------------------*/
+   4          /* --- Mobile: (86)13922805190 ----------------------------------------*/
+   5          /* --- Fax: 86-0513-55012956,55012947,55012969 ------------------------*/
+   6          /* --- Tel: 86-0513-55012928,55012929,55012966 ------------------------*/
+   7          /* --- Web: www.STCMCU.com --------------------------------------------*/
+   8          /* --- Web: www.STCMCUDATA.com  ---------------------------------------*/
+   9          /* --- QQ:  800003751 -------------------------------------------------*/
+  10          /* »Áπ˚“™‘⁄≥Ã–Ú÷– π”√¥À¥˙¬Î,«Î‘⁄≥Ã–Ú÷–◊¢√˜ π”√¡ÀSTCµƒ◊ ¡œº∞≥Ã–Ú        */
+  11          /*---------------------------------------------------------------------*/
+  12          
+  13          
+  14          /*************  π¶ƒ‹Àµ√˜    **************
+  15          
+  16          ±æ¿˝≥Ãª˘”⁄STC8H8K64UŒ™÷˜øÿ–æ∆¨µƒ µ—Èœ‰9Ω¯––±‡–¥≤‚ ‘£¨STC8Hœµ¡––æ∆¨ø…Õ®”√≤Œøº.
+  17          
+  18          ∏ﬂº∂PWM∂® ±∆˜ PWM1P/PWM1N,PWM2P/PWM2N,PWM3P/PWM3N,PWM4P/PWM4N √ø∏ˆÕ®µ¿∂ºø…∂¿¡¢ µœ÷PWM ‰≥ˆ£¨ªÚ’ﬂ¡Ω¡Ωª•≤π∂‘≥
+             -∆ ‰≥ˆ.
+  19          
+  20          8∏ˆÕ®µ¿PWM…Ë÷√∂‘”¶P6µƒ8∏ˆ∂Àø⁄.
+  21          
+  22          Õ®π˝P6ø⁄…œ¡¨Ω”µƒ8∏ˆLEDµ∆£¨¿˚”√PWM µœ÷∫ÙŒ¸µ∆–ßπ˚.
+  23          
+  24          PWM÷‹∆⁄∫Õ’ºø’±»ø…“‘∏˘æ›–Ë“™◊‘––…Ë÷√£¨◊Ó∏ﬂø…¥Ô65535.
+  25          
+  26          œ¬‘ÿ ±, —°‘Ò ±÷” 24MHZ (”√ªßø…◊‘–––ﬁ∏ƒ∆µ¬ ).
+  27          
+  28          ******************************************/
+  29          
+  30          #include    "reg51.h"       //∞¸∫¨¥ÀÕ∑Œƒº˛∫Û£¨¿Ô√Ê…˘√˜µƒºƒ¥Ê∆˜≤ª–Ë“™‘Ÿ ÷∂Ø ‰»Î£¨±‹√‚÷ÿ∏¥∂®“Â
+  31          #include    "intrins.h"
+  32          
+  33          #define     MAIN_Fosc       24000000L   //∂®“Â÷˜ ±÷”
+  34          
+  35          typedef     unsigned char   u8;
+  36          typedef     unsigned int    u16;
+  37          typedef     unsigned long   u32;
+  38          
+  39          // ÷∂Ø ‰»Î…˘√˜"reg51.h"Õ∑Œƒº˛¿Ô√Ê√ª”–∂®“Âµƒºƒ¥Ê∆˜
+  40          sfr TH2  = 0xD6;
+  41          sfr TL2  = 0xD7;
+  42          sfr IE2   = 0xAF;
+  43          sfr INT_CLKO = 0x8F;
+  44          sfr AUXR = 0x8E;
+  45          sfr P_SW1 = 0xA2;
+  46          sfr P_SW2 = 0xBA;
+  47          
+  48          sfr P4   = 0xC0;
+  49          sfr P5   = 0xC8;
+  50          sfr P6   = 0xE8;
+  51          sfr P7   = 0xF8;
+  52          sfr P1M1 = 0x91;    //PxM1.n,PxM0.n     =00--->Standard,    01--->push-pull
+  53          sfr P1M0 = 0x92;    //                  =10--->pure input,  11--->open drain
+  54          sfr P0M1 = 0x93;
+C51 COMPILER V9.01   MAIN                                                                  07/02/2023 18:34:10 PAGE 2   
+
+  55          sfr P0M0 = 0x94;
+  56          sfr P2M1 = 0x95;
+  57          sfr P2M0 = 0x96;
+  58          sfr P3M1 = 0xB1;
+  59          sfr P3M0 = 0xB2;
+  60          sfr P4M1 = 0xB3;
+  61          sfr P4M0 = 0xB4;
+  62          sfr P5M1 = 0xC9;
+  63          sfr P5M0 = 0xCA;
+  64          sfr P6M1 = 0xCB;
+  65          sfr P6M0 = 0xCC;
+  66          sfr P7M1 = 0xE1;
+  67          sfr P7M0 = 0xE2;
+  68          
+  69          sbit P00 = P0^0;
+  70          sbit P01 = P0^1;
+  71          sbit P02 = P0^2;
+  72          sbit P03 = P0^3;
+  73          sbit P04 = P0^4;
+  74          sbit P05 = P0^5;
+  75          sbit P06 = P0^6;
+  76          sbit P07 = P0^7;
+  77          sbit P10 = P1^0;
+  78          sbit P11 = P1^1;
+  79          sbit P12 = P1^2;
+  80          sbit P13 = P1^3;
+  81          sbit P14 = P1^4;
+  82          sbit P15 = P1^5;
+  83          sbit P16 = P1^6;
+  84          sbit P17 = P1^7;
+  85          sbit P20 = P2^0;
+  86          sbit P21 = P2^1;
+  87          sbit P22 = P2^2;
+  88          sbit P23 = P2^3;
+  89          sbit P24 = P2^4;
+  90          sbit P25 = P2^5;
+  91          sbit P26 = P2^6;
+  92          sbit P27 = P2^7;
+  93          sbit P30 = P3^0;
+  94          sbit P31 = P3^1;
+  95          sbit P32 = P3^2;
+  96          sbit P33 = P3^3;
+  97          sbit P34 = P3^4;
+  98          sbit P35 = P3^5;
+  99          sbit P36 = P3^6;
+ 100          sbit P37 = P3^7;
+ 101          sbit P40 = P4^0;
+ 102          sbit P41 = P4^1;
+ 103          sbit P42 = P4^2;
+ 104          sbit P43 = P4^3;
+ 105          sbit P44 = P4^4;
+ 106          sbit P45 = P4^5;
+ 107          sbit P46 = P4^6;
+ 108          sbit P47 = P4^7;
+ 109          sbit P50 = P5^0;
+ 110          sbit P51 = P5^1;
+ 111          sbit P52 = P5^2;
+ 112          sbit P53 = P5^3;
+ 113          sbit P54 = P5^4;
+ 114          sbit P55 = P5^5;
+ 115          sbit P56 = P5^6;
+ 116          sbit P57 = P5^7;
+C51 COMPILER V9.01   MAIN                                                                  07/02/2023 18:34:10 PAGE 3   
+
+ 117          
+ 118          /****************************** ”√ªß∂®“Â∫Í ***********************************/
+ 119          
+ 120          #define Timer0_Reload   (65536UL -(MAIN_Fosc / 1000))       //Timer 0 ÷–∂œ∆µ¬ , 1000¥Œ/√Î
+ 121          
+ 122          #define PWMA_ENO     (*(unsigned char  volatile xdata *)  0xFEB1)
+ 123          #define PWMA_PS      (*(unsigned char  volatile xdata *)  0xFEB2)
+ 124          #define PWMB_ENO     (*(unsigned char  volatile xdata *)  0xFEB5)
+ 125          #define PWMB_PS      (*(unsigned char  volatile xdata *)  0xFEB6)                               
+ 126          
+ 127          #define PWMA_CR1     (*(unsigned char  volatile xdata *)  0xFEC0)
+ 128          #define PWMA_CR2     (*(unsigned char  volatile xdata *)  0xFEC1)
+ 129          #define PWMA_SMCR    (*(unsigned char  volatile xdata *)  0xFEC2) 
+ 130          #define PWMA_ETR     (*(unsigned char  volatile xdata *)  0xFEC3) 
+ 131          #define PWMA_IER     (*(unsigned char  volatile xdata *)  0xFEC4) 
+ 132          #define PWMA_SR1     (*(unsigned char  volatile xdata *)  0xFEC5) 
+ 133          #define PWMA_SR2     (*(unsigned char  volatile xdata *)  0xFEC6) 
+ 134          #define PWMA_EGR     (*(unsigned char  volatile xdata *)  0xFEC7) 
+ 135          #define PWMA_CCMR1   (*(unsigned char  volatile xdata *)  0xFEC8) 
+ 136          #define PWMA_CCMR2   (*(unsigned char  volatile xdata *)  0xFEC9)
+ 137          #define PWMA_CCMR3   (*(unsigned char  volatile xdata *)  0xFECA)
+ 138          #define PWMA_CCMR4   (*(unsigned char  volatile xdata *)  0xFECB)
+ 139          #define PWMA_CCER1   (*(unsigned char  volatile xdata *)  0xFECC)
+ 140          #define PWMA_CCER2   (*(unsigned char  volatile xdata *)  0xFECD)
+ 141          #define PWMA_CNTRH   (*(unsigned char  volatile xdata *)  0xFECE)
+ 142          #define PWMA_CNTRL   (*(unsigned char  volatile xdata *)  0xFECF)
+ 143          #define PWMA_PSCRH   (*(unsigned char  volatile xdata *)  0xFED0)
+ 144          #define PWMA_PSCRL   (*(unsigned char  volatile xdata *)  0xFED1)
+ 145          #define PWMA_ARRH    (*(unsigned char  volatile xdata *)  0xFED2)
+ 146          #define PWMA_ARRL    (*(unsigned char  volatile xdata *)  0xFED3)
+ 147          #define PWMA_RCR     (*(unsigned char  volatile xdata *)  0xFED4)
+ 148          #define PWMA_CCR1H   (*(unsigned char  volatile xdata *)  0xFED5)
+ 149          #define PWMA_CCR1L   (*(unsigned char  volatile xdata *)  0xFED6)
+ 150          #define PWMA_CCR2H   (*(unsigned char  volatile xdata *)  0xFED7)
+ 151          #define PWMA_CCR2L   (*(unsigned char  volatile xdata *)  0xFED8)
+ 152          #define PWMA_CCR3H   (*(unsigned char  volatile xdata *)  0xFED9)
+ 153          #define PWMA_CCR3L   (*(unsigned char  volatile xdata *)  0xFEDA)
+ 154          #define PWMA_CCR4H   (*(unsigned char  volatile xdata *)  0xFEDB)
+ 155          #define PWMA_CCR4L   (*(unsigned char  volatile xdata *)  0xFEDC)
+ 156          #define PWMA_BKR     (*(unsigned char  volatile xdata *)  0xFEDD)
+ 157          #define PWMA_DTR     (*(unsigned char  volatile xdata *)  0xFEDE)
+ 158          #define PWMA_OISR    (*(unsigned char  volatile xdata *)  0xFEDF)
+ 159          
+ 160          /*****************************************************************************/
+ 161          
+ 162          #define PWM1_1      0x00        //P:P1.0  N:P1.1
+ 163          #define PWM1_2      0x01        //P:P2.0  N:P2.1
+ 164          #define PWM1_3      0x02        //P:P6.0  N:P6.1
+ 165          
+ 166          #define PWM2_1      0x00        //P:P1.2/P5.4  N:P1.3
+ 167          #define PWM2_2      0x04        //P:P2.2  N:P2.3
+ 168          #define PWM2_3      0x08        //P:P6.2  N:P6.3
+ 169          
+ 170          #define PWM3_1      0x00        //P:P1.4  N:P1.5
+ 171          #define PWM3_2      0x10        //P:P2.4  N:P2.5
+ 172          #define PWM3_3      0x20        //P:P6.4  N:P6.5
+ 173          
+ 174          #define PWM4_1      0x00        //P:P1.6  N:P1.7
+ 175          #define PWM4_2      0x40        //P:P2.6  N:P2.7
+ 176          #define PWM4_3      0x80        //P:P6.6  N:P6.7
+ 177          #define PWM4_4      0xC0        //P:P3.4  N:P3.3
+ 178          
+C51 COMPILER V9.01   MAIN                                                                  07/02/2023 18:34:10 PAGE 4   
+
+ 179          #define ENO1P       0x01
+ 180          #define ENO1N       0x02
+ 181          #define ENO2P       0x04
+ 182          #define ENO2N       0x08
+ 183          #define ENO3P       0x10
+ 184          #define ENO3N       0x20
+ 185          #define ENO4P       0x40
+ 186          #define ENO4N       0x80
+ 187          
+ 188          #define PWM_PERIOD  1023    //…Ë÷√÷‹∆⁄÷µ
+ 189          
+ 190          /*************  ±æµÿ±‰¡ø…˘√˜    **************/
+ 191          bit B_1ms;          //1ms±Í÷æ
+ 192          
+ 193          u16 PWM1_Duty;
+ 194          u16 PWM2_Duty;
+ 195          u16 PWM3_Duty;
+ 196          u16 PWM4_Duty;
+ 197          
+ 198          bit PWM1_Flag;
+ 199          bit PWM2_Flag;
+ 200          bit PWM3_Flag;
+ 201          bit PWM4_Flag;
+ 202          
+ 203          void UpdatePwm(void);
+ 204          
+ 205          /******************** ÷˜∫Ø ˝ **************************/
+ 206          void main(void)
+ 207          {
+ 208   1          P_SW2 |= 0x80; //¿©’πºƒ¥Ê∆˜(XFR)∑√Œ  πƒ‹
+ 209   1      
+ 210   1          P0M1 = 0x00;   P0M0 = 0x00;   //…Ë÷√Œ™◊ºÀ´œÚø⁄
+ 211   1          P1M1 = 0x00;   P1M0 = 0x00;   //…Ë÷√Œ™◊ºÀ´œÚø⁄
+ 212   1          P2M1 = 0x00;   P2M0 = 0x00;   //…Ë÷√Œ™◊ºÀ´œÚø⁄
+ 213   1          P3M1 = 0x00;   P3M0 = 0x00;   //…Ë÷√Œ™◊ºÀ´œÚø⁄
+ 214   1          P4M1 = 0x00;   P4M0 = 0x00;   //…Ë÷√Œ™◊ºÀ´œÚø⁄
+ 215   1          P5M1 = 0x00;   P5M0 = 0x00;   //…Ë÷√Œ™◊ºÀ´œÚø⁄
+ 216   1          P6M1 = 0x00;   P6M0 = 0x00;   //…Ë÷√Œ™◊ºÀ´œÚø⁄
+ 217   1          P7M1 = 0x00;   P7M0 = 0x00;   //…Ë÷√Œ™◊ºÀ´œÚø⁄
+ 218   1      
+ 219   1          PWM1_Flag = 0;
+ 220   1          PWM2_Flag = 0;
+ 221   1          PWM3_Flag = 0;
+ 222   1          PWM4_Flag = 0;
+ 223   1      
+ 224   1          PWM1_Duty = 0;
+ 225   1          PWM2_Duty = 256;
+ 226   1          PWM3_Duty = 512;
+ 227   1          PWM4_Duty = 1024;
+ 228   1      
+ 229   1          //  Timer0≥ı ºªØ
+ 230   1          AUXR = 0x80;    //Timer0 set as 1T, 16 bits timer auto-reload, 
+ 231   1          TH0 = (u8)(Timer0_Reload / 256);
+ 232   1          TL0 = (u8)(Timer0_Reload % 256);
+ 233   1          ET0 = 1;    //Timer0 interrupt enable
+ 234   1          TR0 = 1;    //Tiner0 run
+ 235   1      
+ 236   1          PWMA_CCER1 = 0x00; //–¥ CCMRx «∞±ÿ–Îœ»«Â¡„ CCxE πÿ±’Õ®µ¿
+ 237   1          PWMA_CCER2 = 0x00;
+ 238   1          PWMA_CCMR1 = 0x68; //Õ®µ¿ƒ£ Ω≈‰÷√
+ 239   1          PWMA_CCMR2 = 0x68;
+ 240   1          PWMA_CCMR3 = 0x68;
+C51 COMPILER V9.01   MAIN                                                                  07/02/2023 18:34:10 PAGE 5   
+
+ 241   1          PWMA_CCMR4 = 0x68;
+ 242   1          PWMA_CCER1 = 0x55; //≈‰÷√Õ®µ¿ ‰≥ˆ πƒ‹∫Õº´–‘
+ 243   1          PWMA_CCER2 = 0x55;
+ 244   1      
+ 245   1          PWMA_ARRH = (u8)(PWM_PERIOD >> 8); //…Ë÷√÷‹∆⁄ ±º‰
+ 246   1          PWMA_ARRL = (u8)PWM_PERIOD;
+ 247   1      
+ 248   1          PWMA_ENO = 0x00;
+ 249   1          PWMA_ENO |= ENO1P; // πƒ‹ ‰≥ˆ
+ 250   1          PWMA_ENO |= ENO1N; // πƒ‹ ‰≥ˆ
+ 251   1          PWMA_ENO |= ENO2P; // πƒ‹ ‰≥ˆ
+ 252   1          PWMA_ENO |= ENO2N; // πƒ‹ ‰≥ˆ
+ 253   1          PWMA_ENO |= ENO3P; // πƒ‹ ‰≥ˆ
+ 254   1          PWMA_ENO |= ENO3N; // πƒ‹ ‰≥ˆ
+ 255   1          PWMA_ENO |= ENO4P; // πƒ‹ ‰≥ˆ
+ 256   1          PWMA_ENO |= ENO4N; // πƒ‹ ‰≥ˆ
+ 257   1      
+ 258   1          PWMA_PS = 0x00;  //∏ﬂº∂ PWM Õ®µ¿ ‰≥ˆΩ≈—°‘ÒŒª
+ 259   1          PWMA_PS |= PWM1_2; //—°‘Ò PWM1_2 Õ®µ¿
+ 260   1      
+ 261   1          PWMA_BKR = 0x80; // πƒ‹÷˜ ‰≥ˆ
+ 262   1          PWMA_CR1 |= 0x01; //ø™ ºº∆ ±
+ 263   1      
+ 264   1          //P40 = 0;          //∏¯LEDπ©µÁ
+ 265   1          EA = 1;     //¥Úø™◊‹÷–∂œ
+ 266   1      
+ 267   1          while (1)
+ 268   1          {
+ 269   2          }
+ 270   1      }
+ 271          
+ 272          
+ 273          /********************** Timer0 1ms÷–∂œ∫Ø ˝ ************************/
+ 274          void timer0(void) interrupt 1
+ 275          {
+ 276   1          if(!PWM1_Flag)
+ 277   1          {
+ 278   2              PWM1_Duty++;
+ 279   2              if(PWM1_Duty > PWM_PERIOD) PWM1_Flag = 1;
+ 280   2          }
+ 281   1          else
+ 282   1          {
+ 283   2              PWM1_Duty--;
+ 284   2              if(PWM1_Duty <= 0) PWM1_Flag = 0;
+ 285   2          }
+ 286   1      
+ 287   1      //    if(!PWM2_Flag)
+ 288   1      //    {
+ 289   1      //        PWM2_Duty++;
+ 290   1      //        if(PWM2_Duty > PWM_PERIOD) PWM2_Flag = 1;
+ 291   1      //    }
+ 292   1      //    else
+ 293   1      //    {
+ 294   1      //        PWM2_Duty--;
+ 295   1      //        if(PWM2_Duty <= 0) PWM2_Flag = 0;
+ 296   1      //    }
+ 297   1      //
+ 298   1      //    if(!PWM3_Flag)
+ 299   1      //    {
+ 300   1      //        PWM3_Duty++;
+ 301   1      //        if(PWM3_Duty > PWM_PERIOD) PWM3_Flag = 1;
+ 302   1      //    }
+C51 COMPILER V9.01   MAIN                                                                  07/02/2023 18:34:10 PAGE 6   
+
+ 303   1      //    else
+ 304   1      //    {
+ 305   1      //        PWM3_Duty--;
+ 306   1      //        if(PWM3_Duty <= 0) PWM3_Flag = 0;
+ 307   1      //    }
+ 308   1      //
+ 309   1      //    if(!PWM4_Flag)
+ 310   1      //    {
+ 311   1      //        PWM4_Duty++;
+ 312   1      //        if(PWM4_Duty > PWM_PERIOD) PWM4_Flag = 1;
+ 313   1      //    }
+ 314   1      //    else
+ 315   1      //    {
+ 316   1      //        PWM4_Duty--;
+ 317   1      //        if(PWM4_Duty <= 0) PWM4_Flag = 0;
+ 318   1      //    }
+ 319   1          
+ 320   1          UpdatePwm();
+ 321   1      }
+ 322          
+ 323          
+ 324          //========================================================================
+ 325          // ∫Ø ˝: UpdatePwm(void)
+ 326          // √Ë ˆ: ∏¸–¬PWM’ºø’±». 
+ 327          // ≤Œ ˝: none.
+ 328          // ∑µªÿ: none.
+ 329          // ∞Ê±æ: V1.0, 2012-11-22
+ 330          //========================================================================
+ 331          void UpdatePwm(void)
+ 332          {
+ 333   1          PWMA_CCR1H = (u8)(PWM1_Duty >> 8); //…Ë÷√’ºø’±» ±º‰
+ 334   1          PWMA_CCR1L = (u8)(PWM1_Duty);
+ 335   1          PWMA_CCR2H = (u8)(PWM2_Duty >> 8); //…Ë÷√’ºø’±» ±º‰
+ 336   1          PWMA_CCR2L = (u8)(PWM2_Duty);
+ 337   1          PWMA_CCR3H = (u8)(PWM3_Duty >> 8); //…Ë÷√’ºø’±» ±º‰
+ 338   1          PWMA_CCR3L = (u8)(PWM3_Duty);
+ 339   1          PWMA_CCR4H = (u8)(PWM4_Duty >> 8); //…Ë÷√’ºø’±» ±º‰
+ 340   1          PWMA_CCR4L = (u8)(PWM4_Duty);
+ 341   1      }
+ 342          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    310    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      8    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      5    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
