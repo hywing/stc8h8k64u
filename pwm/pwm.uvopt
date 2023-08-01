@@ -1532,21 +1532,4 @@
     </View>
   </WinLayout>
 
-  <MDIGroups>
-    <Orientation>1</Orientation>
-    <ActiveMDIGroup>0</ActiveMDIGroup>
-    <MDIGroup>
-      <Size>100</Size>
-      <ActiveTab>0</ActiveTab>
-      <Documents>
-        <Doc>
-          <Name>.\main.c</Name>
-          <ColumnNumber>45</ColumnNumber>
-          <TopLine>315</TopLine>
-          <CurrentLine>325</CurrentLine>
-        </Doc>
-      </Documents>
-    </MDIGroup>
-  </MDIGroups>
-
 </ProjectOpt>
