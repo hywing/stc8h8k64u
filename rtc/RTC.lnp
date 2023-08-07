@@ -1,0 +1,4 @@
+"RTC.obj",
+"isr.obj" 
+TO "RTC" 
+RAMSIZE(256) 

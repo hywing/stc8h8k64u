@@ -5,14 +5,14 @@
 - led
 - key
 - pwm
+- uart
+- rtc
 
 ## todo
 
 - 数码管
 - led点阵
-- rtc
 - oled
-- usart
 - HID usb
 - 超声波模块
 - 温度传感器
