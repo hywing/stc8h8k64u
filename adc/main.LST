@@ -1,0 +1,162 @@
+C51 COMPILER V9.01   MAIN                                                                  08/12/2023 22:20:16 PAGE 1   
+
+
+C51 COMPILER V9.01, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN main.OBJ
+COMPILER INVOKED BY: D:\software\keil4.0\C51\BIN\C51.EXE main.c BROWSE DEBUG OBJECTEXTEND
+
+line level    source
+
+   1          #include "reg51.h"
+   2          #include "intrins.h"
+   3          #include "stdio.h"
+   4          
+   5          sfr     TH2     =   0xD6;
+   6          sfr     TL2     =   0xD7;
+   7          sfr     AUXR    =   0x8E;
+   8          sfr     P_SW2   =   0xBA;
+   9          
+  10          sfr     P1M1    =   0x91;
+  11          sfr     P1M0    =   0x92;
+  12          sfr     P0M1    =   0x93;
+  13          sfr     P0M0    =   0x94;
+  14          sfr     P2M1    =   0x95;
+  15          sfr     P2M0    =   0x96;
+  16          sfr     P3M1    =   0xb1;
+  17          sfr     P3M0    =   0xb2;
+  18          sfr     P4M1    =   0xb3;
+  19          sfr     P4M0    =   0xb4;
+  20          sfr     P5M1    =   0xc9;
+  21          sfr     P5M0    =   0xca;
+  22          sfr     ADC_CONTR   =   0xbc;
+  23          sfr     ADC_RES     =   0xbd;
+  24          sfr     ADC_RESL    =   0xbe;
+  25          sfr     ADCCFG      =   0xde;
+  26          
+  27          #define ADCTIM  (*(unsigned char volatile xdata *)0xfea8)
+  28          
+  29          
+  30          #define MAIN_Fosc   22118400L
+  31          #define Baudrate    115200L
+  32          #define TM          (65536 -(MAIN_Fosc/Baudrate/4))
+  33          
+  34          bit B1S_Flag;
+  35          
+  36          int *BGV;
+  37          
+  38          void RTC_config(void);
+  39          
+  40          void UartInit(void)
+  41          {
+  42   1          SCON = (SCON & 0x3f) | 0x40;
+  43   1          TL2  = TM;
+  44   1          TH2  = TM>>8;
+  45   1          AUXR |= 0x15;
+  46   1      }
+  47          
+  48          void UartPutc(unsigned char dat)
+  49          {
+  50   1          SBUF = dat;
+  51   1          while(TI==0);
+  52   1          TI = 0;
+  53   1      }
+  54          
+  55          char putchar(char c)
+C51 COMPILER V9.01   MAIN                                                                  08/12/2023 22:20:16 PAGE 2   
+
+  56          {
+  57   1          UartPutc(c);
+  58   1          return c;
+  59   1      }
+  60          
+  61          void Delay500ms()               //@22.1184MHz
+  62          {
+  63   1              unsigned char data i, j, k;
+  64   1      
+  65   1              _nop_();
+  66   1              _nop_();
+  67   1              i = 43;
+  68   1              j = 6;
+  69   1              k = 203;
+  70   1              do
+  71   1              {
+  72   2                      do
+  73   2                      {
+  74   3                              while (--k);
+  75   3                      } while (--j);
+  76   2              } while (--i);
+  77   1      }
+  78          
+  79          
+  80          float ADCRead() 
+  81          {
+  82   1              unsigned int res;
+  83   1              float val;
+  84   1      
+  85   1              ADC_CONTR |= 0x40;
+  86   1              _nop_();
+  87   1              _nop_();
+  88   1              while(!(ADC_CONTR & 0x20));
+  89   1              ADC_CONTR &= ~0x20;
+  90   1              res = ADC_RES & 0x0f;
+  91   1              res <<= 8;
+  92   1              res = res | (ADC_RESL);
+  93   1              //printf("res : %u\n", res);
+  94   1              val = 2.5 * res * 100 / 4096;
+  95   1              return val;
+  96   1      }
+  97          
+  98          
+  99          void main(void)
+ 100          {
+ 101   1          P0M1 = 0;   P0M0 = 0;                       //设置为准双向口
+ 102   1          P1M1 = 0;   P1M0 = 0;                       //设置为准双向口
+ 103   1          P2M1 = 0;   P2M0 = 0;                       //设置为准双向口
+ 104   1          P3M1 = 0;   P3M0 = 0;                       //设置为准双向口
+ 105   1          P4M1 = 0;   P4M0 = 0;                       //设置为准双向口
+ 106   1          P5M1 = 0;   P5M0 = 0;                       //设置为准双向口
+ 107   1      
+ 108   1          UartInit();
+ 109   1          EA = 1;
+ 110   1          printf("STC8H4K64TLR RTC Test Programme!\r\n"); //UART发送一个字符串
+ 111   1      
+ 112   1          P1M0 = 0x00;                                //设置P1.0为ADC口
+ 113   1          P1M1 = 0x01;
+ 114   1          P_SW2 |= 0x80;
+ 115   1          ADCTIM = 0x3f;                              //设置ADC内部时序
+ 116   1          P_SW2 &= 0x7f;
+ 117   1          ADCCFG = 0x2f;                              //设置ADC时钟为系统时钟/2/16
+C51 COMPILER V9.01   MAIN                                                                  08/12/2023 22:20:16 PAGE 3   
+
+ 118   1          ADC_CONTR = 0x80;                           //使能ADC模块
+ 119   1      
+ 120   1          while (1)
+ 121   1          {
+ 122   2                      float vcc = 0;
+ 123   2                      unsigned int result;
+ 124   2                      int i;
+ 125   2                      for(i = 0; i < 8; i++)
+ 126   2                      {
+ 127   3                              vcc += ADCRead();
+ 128   3                      }
+ 129   2                      vcc /= 8;       
+ 130   2                      result = vcc;
+ 131   2                      printf("Voltage = %.2fV\n", vcc / 100);
+ 132   2                      Delay500ms();
+ 133   2          }
+ 134   1      
+ 135   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    302    ----
+   CONSTANT SIZE    =     52    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      3       8
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
