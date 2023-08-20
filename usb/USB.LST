@@ -1,0 +1,668 @@
+C51 COMPILER V9.59.0.0   USB                                                               04/08/2022 16:33:26 PAGE 1   
+
+
+C51 COMPILER V9.59.0.0, COMPILATION OF MODULE USB
+OBJECT MODULE PLACED IN USB.OBJ
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE USB.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND TABS(2)
+
+line level    source
+
+   1          /*---------------------------------------------------------------------*/
+   2          /* --- STC MCU Limited ------------------------------------------------*/
+   3          /* --- STC 1T Series MCU Demo Programme -------------------------------*/
+   4          /* --- Mobile: (86)13922805190 ----------------------------------------*/
+   5          /* --- Fax: 86-0513-55012956,55012947,55012969 ------------------------*/
+   6          /* --- Tel: 86-0513-55012928,55012929,55012966 ------------------------*/
+   7          /* --- Web: www.STCMCU.com --------------------------------------------*/
+   8          /* --- Web: www.STCMCUDATA.com  ---------------------------------------*/
+   9          /* --- QQ:  800003751 -------------------------------------------------*/
+  10          /* 如果要在程序中使用此代码,请在程序中注明使用了STC的资料及程序        */
+  11          /*---------------------------------------------------------------------*/
+  12          
+  13          /*************  功能说明    **************
+  14          
+  15          本例程基于STC8H8K64U为主控芯片的实验箱9进行编写测试.
+  16          
+  17          上位机软通过USB向MCU发送读取AD值命令, MCU收到命令后将获取的AD值通过USB发送给上位机.
+  18          
+  19          命令格式： AA 55 CMD ADH ADL GAPH GAPL CS
+  20          AA 55：起始码；
+  21          CMD：  01,上位机向设备获取数据；02，设备向上位机发送数据；
+  22          ADH：  测量AD值高8位；
+  23          ADL：  测量AD值低8位；
+  24          GAPH： 内部参考电压AD值高8位；
+  25          GAPL： 内部参考电压AD值低8位；
+  26          CS：   校验码(以上数据的累加值)。
+  27          
+  28          下载时, 选择时钟 24MHZ (用户可自行修改频率).
+  29          
+  30          ******************************************/
+  31          
+  32          #include "reg51.h"       //包含此头文件后，里面声明的寄存器不需要再手动输入，避免重复定义
+  33          #include "intrins.h"
+  34          #include "USB.h"
+  35          
+  36          #define MAIN_Fosc       24000000L   //定义主时钟
+  37          
+  38          //手动输入声明"reg51.h"头文件里面没有定义的寄存器
+  39          sfr AUXR = 0x8E;
+  40          sfr INT_CLKO = 0x8F;
+  41          sfr IE2 = 0xAF;
+  42          sfr IP2 = 0xB5;
+  43          sfr IP2H = 0xB6;
+  44          sfr P_SW2 = 0xBA;
+  45          sfr TH2  = 0xD6;
+  46          sfr TL2  = 0xD7;
+  47          
+  48          sfr USBCLK = 0xDC;
+  49          sfr USBDAT = 0xEC;
+  50          sfr USBCON = 0xF4;
+  51          sfr USBADR = 0xFC;
+  52          
+  53          sfr ADC_CONTR = 0xBC;   //带AD系列
+  54          sfr ADC_RES   = 0xBD;   //带AD系列
+  55          sfr ADC_RESL  = 0xBE;   //带AD系列
+C51 COMPILER V9.59.0.0   USB                                                               04/08/2022 16:33:26 PAGE 2   
+
+  56          sfr ADCCFG = 0xDE;
+  57          
+  58          #define IRC48MCR (*(unsigned char volatile xdata *)0xfe07)
+  59          #define RSTFLAG (*(unsigned char volatile xdata *)0xfe09)
+  60          #define ADCTIM (*(unsigned char volatile xdata *)0xfea8)
+  61          
+  62          #define Timer0_Reload   (65536UL -(MAIN_Fosc / 1000))       //Timer 0 中断频率, 1000次/秒
+  63          
+  64          bit B_1ms;          //1ms标志
+  65          WORD msecond;
+  66          WORD Bandgap;
+  67          
+  68          void UsbInit();
+  69          BYTE ReadReg(BYTE addr);
+  70          void WriteReg(BYTE addr, BYTE dat);
+  71          BYTE ReadFifo(BYTE fifo, BYTE *pdat);
+  72          void WriteFifo(BYTE fifo, BYTE *pdat, BYTE cnt);
+  73          
+  74          void ADC_Config(void);
+  75          void Timer0_Config(WORD tReload);
+  76          WORD Get_ADC12bitResult(BYTE channel); //channel = 0~15
+  77          BYTE GetCheckSum(BYTE *buf, BYTE len);
+  78          
+  79          void main()
+  80          {
+  81   1        BYTE i;
+  82   1        WORD ADData;
+  83   1        
+  84   1        P0M1 = 0x00;   P0M0 = 0x00;   //设置为准双向口
+  85   1        P1M1 = 0x00;   P1M0 = 0x00;   //设置为准双向口
+  86   1        P2M1 = 0x00;   P2M0 = 0x00;   //设置为准双向口
+  87   1        P3M1 = 0x00;   P3M0 = 0x00;   //设置为准双向口
+  88   1        P4M1 = 0x00;   P4M0 = 0x00;   //设置为准双向口
+  89   1        P5M1 = 0x00;   P5M0 = 0x00;   //设置为准双向口
+  90   1        P6M1 = 0x00;   P6M0 = 0x00;   //设置为准双向口
+  91   1        P7M1 = 0x00;   P7M0 = 0x00;   //设置为准双向口
+  92   1        
+  93   1        Timer0_Config(Timer0_Reload);
+  94   1        ADC_Config();
+  95   1        UsbInit();
+  96   1        EA = 1;
+  97   1        HidOutput[0]=0xaa;
+  98   1        HidOutput[1]=0x55;
+  99   1        HidOutput[2]=0x02;
+ 100   1        for(i=3;i<64;i++) HidOutput[i] = 0;
+ 101   1      
+ 102   1        while (1)
+ 103   1        {
+ 104   2          if(B_1ms)   //1ms到
+ 105   2          {
+ 106   3            B_1ms = 0;
+ 107   3            if(++msecond >= 300)    //300ms到
+ 108   3            {
+ 109   4              msecond = 0;
+ 110   4      
+ 111   4              Bandgap = Get_ADC12bitResult(15);    //读内部基准ADC, 读15通道
+ 112   4              ADData = Get_ADC12bitResult(3);      //读外部电压ADC
+ 113   4              HidOutput[3] = (BYTE)(ADData >> 8);
+ 114   4              HidOutput[4] = (BYTE)(ADData);
+ 115   4              HidOutput[5] = (BYTE)(Bandgap >> 8);
+ 116   4              HidOutput[6] = (BYTE)(Bandgap);
+ 117   4              HidOutput[7] = GetCheckSum(HidOutput,7);
+C51 COMPILER V9.59.0.0   USB                                                               04/08/2022 16:33:26 PAGE 3   
+
+ 118   4            }
+ 119   3          }
+ 120   2        }
+ 121   1      }
+ 122          
+ 123          BYTE ReadReg(BYTE addr)
+ 124          {
+ 125   1        BYTE dat;
+ 126   1        while (USBADR & 0x80);
+ 127   1        USBADR = addr | 0x80;
+ 128   1        while (USBADR & 0x80);
+ 129   1        dat = USBDAT;
+ 130   1        return dat;
+ 131   1      }
+ 132          
+ 133          void WriteReg(BYTE addr, BYTE dat)
+ 134          {
+ 135   1        while (USBADR & 0x80);
+ 136   1        USBADR = addr & 0x7f;
+ 137   1        USBDAT = dat;
+ 138   1      }
+ 139          
+ 140          BYTE ReadFifo(BYTE fifo, BYTE *pdat)
+ 141          {
+ 142   1        BYTE cnt;
+ 143   1        BYTE ret;
+ 144   1        ret = cnt = ReadReg(COUNT0);
+ 145   1        while (cnt--)
+ 146   1        {
+ 147   2          *pdat++ = ReadReg(fifo);
+ 148   2        }
+ 149   1        return ret;
+ 150   1      }
+ 151          
+ 152          void WriteFifo(BYTE fifo, BYTE *pdat, BYTE cnt)
+ 153          {
+ 154   1        while (cnt--)
+ 155   1        {
+ 156   2          WriteReg(fifo, *pdat++);
+ 157   2        }
+ 158   1      }
+ 159          
+ 160          void UsbInit()
+ 161          {
+ 162   1        P3M0 = 0x00;
+ 163   1        P3M1 = 0x03;
+ 164   1        P_SW2 |= 0x80;
+ 165   1        RSTFLAG = 0x07;
+ 166   1        IRC48MCR = 0x80;
+ 167   1        while (!(IRC48MCR & 0x01));
+ 168   1        P_SW2 &= ~0x80;
+ 169   1        USBCLK = 0x00;
+ 170   1        USBCON = 0x90;
+ 171   1        IP2H |= 0x80;   //USB 中断优先级为 3 级（最高级）
+ 172   1        IP2 |= 0x80;
+ 173   1        WriteReg(FADDR, 0x00);
+ 174   1        WriteReg(POWER, 0x08);
+ 175   1        WriteReg(INTRIN1E, 0x3f);
+ 176   1        WriteReg(INTROUT1E, 0x3f);
+ 177   1        WriteReg(INTRUSBE, 0x00);
+ 178   1        WriteReg(POWER, 0x01);
+ 179   1        Ep0Stage.bStage = EPIDLE;
+C51 COMPILER V9.59.0.0   USB                                                               04/08/2022 16:33:26 PAGE 4   
+
+ 180   1        IE2 |= 0x80;
+ 181   1      }
+ 182          
+ 183          void usb_isr() interrupt 25
+ 184          {
+ 185   1        BYTE intrusb;
+ 186   1        BYTE intrin;
+ 187   1        BYTE introut;
+ 188   1        BYTE csr;
+ 189   1        BYTE cnt;
+ 190   1        WORD len;
+ 191   1        intrusb = ReadReg(INTRUSB);
+ 192   1        intrin = ReadReg(INTRIN1);
+ 193   1        introut = ReadReg(INTROUT1);
+ 194   1        if (intrusb & RSTIF)
+ 195   1        {
+ 196   2          WriteReg(INDEX, 1);
+ 197   2          WriteReg(INCSR1, INCLRDT);
+ 198   2          WriteReg(INDEX, 1);
+ 199   2          WriteReg(OUTCSR1, OUTCLRDT);
+ 200   2          Ep0Stage.bStage = EPIDLE;
+ 201   2        }
+ 202   1        if (intrin & EP0IF)
+ 203   1        {
+ 204   2          WriteReg(INDEX, 0);
+ 205   2          csr = ReadReg(CSR0);
+ 206   2          if (csr & STSTL)
+ 207   2          {
+ 208   3            WriteReg(CSR0, csr & ~STSTL);
+ 209   3            Ep0Stage.bStage = EPIDLE;
+ 210   3          }
+ 211   2          if (csr & SUEND)
+ 212   2          {
+ 213   3            WriteReg(CSR0, csr | SSUEND);
+ 214   3          }
+ 215   2          switch (Ep0Stage.bStage)
+ 216   2          {
+ 217   3            case EPIDLE:
+ 218   3            if (csr & OPRDY)
+ 219   3            {
+ 220   4              Ep0Stage.bStage = EPSTATUS;
+ 221   4              ReadFifo(FIFO0, (BYTE *)&Setup);
+ 222   4              ((BYTE *)&Ep0Stage.wResidue)[0] = Setup.wLengthH;
+ 223   4              ((BYTE *)&Ep0Stage.wResidue)[1]= Setup.wLengthL;
+ 224   4              switch (Setup.bmRequestType & REQUEST_MASK)
+ 225   4              {
+ 226   5                case STANDARD_REQUEST:
+ 227   5                switch (Setup.bRequest)
+ 228   5                {
+ 229   6                  case SET_ADDRESS:
+ 230   6                    WriteReg(FADDR, Setup.wValueL);
+ 231   6                  break;
+ 232   6                  
+ 233   6                  case SET_CONFIG:
+ 234   6                    WriteReg(INDEX, 1);
+ 235   6                    WriteReg(INCSR2, INMODEIN);
+ 236   6                    WriteReg(INMAXP, 8);
+ 237   6                    WriteReg(INDEX, 1);
+ 238   6                    WriteReg(INCSR2, INMODEOUT);
+ 239   6                    WriteReg(OUTMAXP, 8);
+ 240   6                    WriteReg(INDEX, 0);
+ 241   6                  break;
+C51 COMPILER V9.59.0.0   USB                                                               04/08/2022 16:33:26 PAGE 5   
+
+ 242   6                  
+ 243   6                  case GET_DESCRIPTOR:
+ 244   6                    Ep0Stage.bStage = EPDATAIN;
+ 245   6                    switch (Setup.wValueH)
+ 246   6                    {
+ 247   7                      case DESC_DEVICE:
+ 248   7                        Ep0Stage.pData = DEVICEDESC;
+ 249   7                        len = sizeof(DEVICEDESC);
+ 250   7                      break;
+ 251   7                      
+ 252   7                      case DESC_CONFIG:
+ 253   7                        Ep0Stage.pData = CONFIGDESC;
+ 254   7                        len = sizeof(CONFIGDESC);
+ 255   7                      break;
+ 256   7                      
+ 257   7                      case DESC_STRING:
+ 258   7                      switch (Setup.wValueL)
+ 259   7                      {
+ 260   8                        case 0:
+ 261   8                          Ep0Stage.pData = LANGIDDESC;
+ 262   8                          len = sizeof(LANGIDDESC);
+ 263   8                        break;
+ 264   8                        
+ 265   8                        case 1:
+ 266   8                          Ep0Stage.pData = MANUFACTDESC;
+ 267   8                          len = sizeof(MANUFACTDESC);
+ 268   8                        break;
+ 269   8                        
+ 270   8                        case 2:
+ 271   8                          Ep0Stage.pData = PRODUCTDESC;
+ 272   8                          len = sizeof(PRODUCTDESC);
+ 273   8                        break;
+ 274   8                        
+ 275   8                        default:
+ 276   8                          Ep0Stage.bStage = EPSTALL;
+ 277   8                        break;
+ 278   8                      }
+ 279   7                      break;
+ 280   7                      
+ 281   7                      case DESC_HIDREPORT:
+ 282   7                        Ep0Stage.pData = HIDREPORTDESC;
+ 283   7                        len = sizeof(HIDREPORTDESC);
+ 284   7                      break;
+ 285   7                      
+ 286   7                      default:
+ 287   7                        Ep0Stage.bStage = EPSTALL;
+ 288   7                      break;
+ 289   7                    }
+ 290   6                    if (len < Ep0Stage.wResidue)
+ 291   6                    {
+ 292   7                      Ep0Stage.wResidue = len;
+ 293   7                    }
+ 294   6                  break;
+ 295   6                    
+ 296   6                  default:
+ 297   6                    Ep0Stage.bStage = EPSTALL;
+ 298   6                  break;
+ 299   6                }
+ 300   5                break;
+ 301   5                
+ 302   5                case CLASS_REQUEST:
+ 303   5                  switch (Setup.bRequest)
+C51 COMPILER V9.59.0.0   USB                                                               04/08/2022 16:33:26 PAGE 6   
+
+ 304   5                  {
+ 305   6                    case GET_REPORT:
+ 306   6                      Ep0Stage.pData = HidFreature;
+ 307   6                      Ep0Stage.bStage = EPDATAIN;
+ 308   6                    break;
+ 309   6                    
+ 310   6                    case SET_REPORT:
+ 311   6                      Ep0Stage.pData = HidFreature;
+ 312   6                      Ep0Stage.bStage = EPDATAOUT;
+ 313   6                    break;
+ 314   6                    
+ 315   6                    case SET_IDLE:
+ 316   6                    break;
+ 317   6                    
+ 318   6                    case GET_IDLE:
+ 319   6                    case GET_PROTOCOL:
+ 320   6                    case SET_PROTOCOL:
+ 321   6                    default:
+ 322   6                      Ep0Stage.bStage = EPSTALL;
+ 323   6                    break;
+ 324   6                  }
+ 325   5                break;
+ 326   5                  
+ 327   5                default:
+ 328   5                  Ep0Stage.bStage = EPSTALL;
+ 329   5                break;
+ 330   5              }
+ 331   4              
+ 332   4              switch (Ep0Stage.bStage)
+ 333   4              {
+ 334   5                case EPDATAIN:
+ 335   5                  WriteReg(CSR0, SOPRDY);
+ 336   5                  goto L_Ep0SendData;
+ 337   5                break;
+ 338   5                
+ 339   5                case EPDATAOUT:
+ 340   5                  WriteReg(CSR0, SOPRDY);
+ 341   5                break;
+ 342   5                
+ 343   5                case EPSTATUS:
+ 344   5                  WriteReg(CSR0, SOPRDY | DATEND);
+ 345   5                  Ep0Stage.bStage = EPIDLE;
+ 346   5                break;
+ 347   5                
+ 348   5                case EPSTALL:
+ 349   5                  WriteReg(CSR0, SOPRDY | SDSTL);
+ 350   5                  Ep0Stage.bStage = EPIDLE;
+ 351   5                break;
+ 352   5              }
+ 353   4            }
+ 354   3            break;
+ 355   3            
+ 356   3            case EPDATAIN:
+ 357   3              if (!(csr & IPRDY))
+ 358   3              {
+ 359   4                L_Ep0SendData:
+ 360   4                cnt = Ep0Stage.wResidue > 64 ? 64 : Ep0Stage.wResidue;
+ 361   4                WriteFifo(FIFO0, Ep0Stage.pData, cnt);
+ 362   4                Ep0Stage.wResidue -= cnt;
+ 363   4                Ep0Stage.pData += cnt;
+ 364   4                if (Ep0Stage.wResidue == 0)
+ 365   4                {
+C51 COMPILER V9.59.0.0   USB                                                               04/08/2022 16:33:26 PAGE 7   
+
+ 366   5                  WriteReg(CSR0, IPRDY | DATEND);
+ 367   5                  Ep0Stage.bStage = EPIDLE;
+ 368   5                }
+ 369   4                else
+ 370   4                {
+ 371   5                  WriteReg(CSR0, IPRDY);
+ 372   5                }
+ 373   4              }
+ 374   3            break;
+ 375   3            
+ 376   3            case EPDATAOUT:
+ 377   3            if (csr & OPRDY)
+ 378   3            {
+ 379   4              cnt = ReadFifo(FIFO0, Ep0Stage.pData);
+ 380   4              Ep0Stage.wResidue -= cnt;
+ 381   4              Ep0Stage.pData += cnt;
+ 382   4              if (Ep0Stage.wResidue == 0)
+ 383   4              {
+ 384   5                WriteReg(CSR0, SOPRDY | DATEND);
+ 385   5                Ep0Stage.bStage = EPIDLE;
+ 386   5              }
+ 387   4              else
+ 388   4              {
+ 389   5                WriteReg(CSR0, SOPRDY);
+ 390   5              }
+ 391   4            }
+ 392   3            break;
+ 393   3          }
+ 394   2        }
+ 395   1        
+ 396   1        if (intrin & EP1INIF)
+ 397   1        {
+ 398   2          WriteReg(INDEX, 1);
+ 399   2          csr = ReadReg(INCSR1);
+ 400   2          if (csr & INSTSTL)
+ 401   2          {
+ 402   3            WriteReg(INCSR1, INCLRDT);
+ 403   3          }
+ 404   2          if (csr & INUNDRUN)
+ 405   2          {
+ 406   3            WriteReg(INCSR1, 0);
+ 407   3          }
+ 408   2        }
+ 409   1        
+ 410   1        if (introut & EP1OUTIF)
+ 411   1        {
+ 412   2          WriteReg(INDEX, 1);
+ 413   2          csr = ReadReg(OUTCSR1);
+ 414   2          if (csr & OUTSTSTL)
+ 415   2          {
+ 416   3            WriteReg(OUTCSR1, OUTCLRDT);
+ 417   3          }
+ 418   2          if (csr & OUTOPRDY)
+ 419   2          {
+ 420   3            ReadFifo(FIFO1, HidInput);
+ 421   3            WriteReg(OUTCSR1, 0);
+ 422   3            
+ 423   3            if((HidInput[0]==0xaa) && (HidInput[1]==0x55) && (HidInput[2]==0x01))
+ 424   3            {
+ 425   4              WriteReg(INDEX, 1);
+ 426   4              WriteFifo(FIFO1, HidOutput, 64);
+ 427   4              WriteReg(INCSR1, INIPRDY);
+C51 COMPILER V9.59.0.0   USB                                                               04/08/2022 16:33:26 PAGE 8   
+
+ 428   4            }
+ 429   3          }
+ 430   2        }
+ 431   1      }
+ 432          
+ 433          char code DEVICEDESC[18] =
+ 434          {
+ 435            0x12, //bLength(18);
+ 436            0x01, //bDescriptorType(Device);
+ 437            0x00,0x02, //bcdUSB(2.00);
+ 438            0x00, //bDeviceClass(0);
+ 439            0x00, //bDeviceSubClass0);
+ 440            0x00, //bDeviceProtocol(0);
+ 441            0x40, //bMaxPacketSize0(64);
+ 442            0xbf,0x34, //idVendor(34bf);
+ 443            0x03,0xf0, //idProduct(f003);
+ 444            0x00,0x01, //bcdDevice(1.00);
+ 445            0x01, //iManufacturer(1);
+ 446            0x02, //iProduct(2);
+ 447            0x00, //iSerialNumber(0);
+ 448            0x01, //bNumConfigurations(1);
+ 449          };
+ 450          
+ 451          char code CONFIGDESC[41] =
+ 452          {
+ 453            0x09, //bLength(9);
+ 454            0x02, //bDescriptorType(Configuration);
+ 455            0x29,0x00, //wTotalLength(41);
+ 456            0x01, //bNumInterfaces(1);
+ 457            0x01, //bConfigurationValue(1);
+ 458            0x00, //iConfiguration(0);
+ 459            0x80, //bmAttributes(BUSPower);
+ 460            0x32, //MaxPower(100mA);
+ 461            0x09, //bLength(9);
+ 462            0x04, //bDescriptorType(Interface);
+ 463            0x00, //bInterfaceNumber(0);
+ 464            0x00, //bAlternateSetting(0);
+ 465            0x02, //bNumEndpoints(2);
+ 466            0x03, //bInterfaceClass(HID);
+ 467            0x00, //bInterfaceSubClass(0);
+ 468            0x00, //bInterfaceProtocol(0);
+ 469            0x00, //iInterface(0);
+ 470            0x09, //bLength(9);
+ 471            0x21, //bDescriptorType(HID);
+ 472            0x01,0x01, //bcdHID(1.01);
+ 473            0x00, //bCountryCode(0);
+ 474            0x01, //bNumDescriptors(1);
+ 475            0x22, //bDescriptorType(HID Report);
+ 476            0x1b,0x00, //wDescriptorLength(27);
+ 477            0x07, //bLength(7);
+ 478            0x05, //bDescriptorType(Endpoint);
+ 479            0x81, //bEndpointAddress(EndPoint1 as IN);
+ 480            0x03, //bmAttributes(Interrupt);
+ 481            0x40,0x00, //wMaxPacketSize(64);
+ 482            0x01, //bInterval(10ms);
+ 483            0x07, //bLength(7);
+ 484            0x05, //bDescriptorType(Endpoint);
+ 485            0x01, //bEndpointAddress(EndPoint1 as OUT);
+ 486            0x03, //bmAttributes(Interrupt);
+ 487            0x40,0x00, //wMaxPacketSize(64);
+ 488            0x01, //bInterval(10ms);
+ 489          };
+C51 COMPILER V9.59.0.0   USB                                                               04/08/2022 16:33:26 PAGE 9   
+
+ 490          
+ 491          char code HIDREPORTDESC[27] =
+ 492          {
+ 493            0x05,0x0c, //USAGE_PAGE(Consumer);
+ 494            0x09,0x01, //USAGE(Consumer Control);
+ 495            0xa1,0x01, //COLLECTION(Application);
+ 496            0x15,0x00, // LOGICAL_MINIMUM(0);
+ 497            0x25,0xff, // LOGICAL_MAXIMUM(255);
+ 498            0x75,0x08, // REPORT_SIZE(8);
+ 499            0x95,0x40, // REPORT_COUNT(64);
+ 500            0x09,0x01, // USAGE(Consumer Control);
+ 501            0xb1,0x02, // FEATURE(Data,Variable);
+ 502            0x09,0x01, // USAGE(Consumer Control);
+ 503            0x81,0x02, // INPUT(Data,Variable);
+ 504            0x09,0x01, // USAGE(Consumer Control);
+ 505            0x91,0x02, // OUTPUT(Data,Variable);
+ 506            0xc0, //END_COLLECTION;
+ 507          };
+ 508          
+ 509          char code LANGIDDESC[4] =
+ 510          {
+ 511            0x04,0x03,
+ 512            0x09,0x04,
+ 513          };
+ 514          
+ 515          char code MANUFACTDESC[8] =
+ 516          {
+ 517            0x08,0x03,
+ 518            'S',0,
+ 519            'T',0,
+ 520            'C',0,
+ 521          };
+ 522          
+ 523          char code PRODUCTDESC[30] =
+ 524          {
+ 525            0x1e,0x03,
+ 526            'S',0,
+ 527            'T',0,
+ 528            'C',0,
+ 529            ' ',0,
+ 530            'U',0,
+ 531            'S',0,
+ 532            'B',0,
+ 533            ' ',0,
+ 534            'D',0,
+ 535            'e',0,
+ 536            'v',0,
+ 537            'i',0,
+ 538            'c',0,
+ 539            'e',0,
+ 540          };
+ 541          
+ 542          //========================================================================
+ 543          // 函数: void ADC_Config(void)
+ 544          // 描述: ADC设置.
+ 545          // 参数: NULL.
+ 546          // 返回: NULL.
+ 547          // 版本: V1.0, 2012-10-22
+ 548          //========================================================================
+ 549          void ADC_Config(void)
+ 550          {
+ 551   1        P1M1 |= 0x08;
+C51 COMPILER V9.59.0.0   USB                                                               04/08/2022 16:33:26 PAGE 10  
+
+ 552   1        P1M0 &= 0xf7;   //设置 P1.3 为 ADC 输入口
+ 553   1      
+ 554   1        P_SW2 |= 0x80;
+ 555   1        ADCTIM = 0x3f;    //设置 ADC 内部时序，ADC采样时间建议设最大值
+ 556   1        P_SW2 &= 0x7f;
+ 557   1        ADCCFG = 0x2f;    //设置 ADC 时钟为系统时钟/2/16/16
+ 558   1        ADC_CONTR = 0x80; //使能 ADC 模块
+ 559   1      }
+ 560          
+ 561          //========================================================================
+ 562          // 函数: void Timer0_Config(u16 tReload)
+ 563          // 描述: 定时器设置.
+ 564          // 参数: tReload: 定时时间..
+ 565          // 返回: NULL.
+ 566          // 版本: V1.0, 2012-10-22
+ 567          //========================================================================
+ 568          void Timer0_Config(WORD tReload)
+ 569          {
+ 570   1        AUXR = 0x80;    //Timer0 set as 1T, 16 bits timer auto-reload, 
+ 571   1        TH0 = (BYTE)(tReload / 256);
+ 572   1        TL0 = (BYTE)(tReload % 256);
+ 573   1        ET0 = 1;    //Timer0 interrupt enable
+ 574   1        TR0 = 1;    //Tiner0 run
+ 575   1      }
+ 576          
+ 577          //========================================================================
+ 578          // 函数: WORD Get_ADC12bitResult(BYTE channel)
+ 579          // 描述: 查询法读一次ADC结果.
+ 580          // 参数: channel: 选择要转换的ADC.
+ 581          // 返回: 12位ADC结果.
+ 582          // 版本: V1.0, 2012-10-22
+ 583          //========================================================================
+ 584          WORD Get_ADC12bitResult(BYTE channel)  //channel = 0~15
+ 585          {
+ 586   1          ADC_RES = 0;
+ 587   1          ADC_RESL = 0;
+ 588   1      
+ 589   1          ADC_CONTR = (ADC_CONTR & 0xF0) | 0x40 | channel;    //启动 AD 转换
+ 590   1          _nop_();
+ 591   1          _nop_();
+ 592   1          _nop_();
+ 593   1          _nop_();
+ 594   1      
+ 595   1          while((ADC_CONTR & 0x20) == 0)  ;   //wait for ADC finish
+ 596   1          ADC_CONTR &= ~0x20;     //清除ADC结束标志
+ 597   1          return  (((WORD)ADC_RES << 8) | ADC_RESL);
+ 598   1      }
+ 599          
+ 600          /********************** Timer0 1ms中断函数 ************************/
+ 601          void timer0 (void) interrupt 1
+ 602          {
+ 603   1          B_1ms = 1;      //1ms标志
+ 604   1      }
+ 605          
+ 606          //========================================================================
+ 607          // 函数: BYTE GetCheckSum(BYTE *buf, BYTE len)
+ 608          // 描述: 获取校验码
+ 609          // 参数: buf:  字符串指针, len: 字节数
+ 610          // 返回: none.
+ 611          // 版本: VER1.0
+ 612          // 日期: 2020-7-6
+ 613          // 备注: 
+C51 COMPILER V9.59.0.0   USB                                                               04/08/2022 16:33:26 PAGE 11  
+
+ 614          //========================================================================
+ 615          BYTE GetCheckSum(BYTE *buf, BYTE len) //获取校验码
+ 616          {
+ 617   1          BYTE i;
+ 618   1          BYTE cs=0;
+ 619   1          for (i = 0; i < len; i++)
+ 620   1          {
+ 621   2              cs += buf[i];
+ 622   2          }
+ 623   1          return cs;
+ 624   1      }
+ 625          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1299    ----
+   CONSTANT SIZE    =    128    ----
+   XDATA SIZE       =    192    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     18      19
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

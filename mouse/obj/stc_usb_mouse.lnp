@@ -1,0 +1,10 @@
+".\obj\main.obj",
+".\obj\usb.obj",
+".\obj\usb_desc.obj",
+".\obj\usb_req_class.obj",
+".\obj\usb_req_std.obj",
+".\obj\usb_req_vendor.obj",
+".\obj\util.obj",
+".\obj\timer.obj" 
+TO ".\obj\stc_usb_mouse" 
+PRINT(".\obj\stc_usb_mouse.m51") RAMSIZE(256) 

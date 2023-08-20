@@ -4,10 +4,12 @@
 
 - led
 - key
+- int
 - pwm
 - uart
 - rtc
 - adc
+- hid
 
 ## todo
 
@@ -16,8 +18,6 @@
 - led点阵
 
 - oled
-
-- HID usb
 
 - 超声波模块
 

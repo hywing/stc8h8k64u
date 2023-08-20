@@ -1,0 +1,175 @@
+C51 COMPILER V9.01   USB_DESC                                                              08/19/2023 22:41:15 PAGE 1   
+
+
+C51 COMPILER V9.01, COMPILATION OF MODULE USB_DESC
+OBJECT MODULE PLACED IN .\obj\usb_desc.obj
+COMPILER INVOKED BY: D:\software\keil4.0\C51\BIN\C51.EXE src\usb_desc.c BROWSE DEBUG OBJECTEXTEND PRINT(.\obj\usb_desc.l
+                    -st) OBJECT(.\obj\usb_desc.obj)
+
+line level    source
+
+   1          /*---------------------------------------------------------------------*/
+   2          /* --- STC MCU Limited ------------------------------------------------*/
+   3          /* --- STC 1T Series MCU Demo Programme -------------------------------*/
+   4          /* --- Mobile: (86)13922805190 ----------------------------------------*/
+   5          /* --- Fax: 86-0513-55012956,55012947,55012969 ------------------------*/
+   6          /* --- Tel: 86-0513-55012928,55012929,55012966 ------------------------*/
+   7          /* --- Web: www.STCMCU.com --------------------------------------------*/
+   8          /* --- Web: www.STCMCUDATA.com  ---------------------------------------*/
+   9          /* --- QQ:  800003751 -------------------------------------------------*/
+  10          /* 如果要在程序中使用此代码,请在程序中注明使用了STC的资料及程序        */
+  11          /*---------------------------------------------------------------------*/
+  12          
+  13          #include "stc.h"
+  14          #include "usb_desc.h"
+  15          
+  16          char code DEVICEDESC[18] =
+  17          {
+  18              0x12,                   //bLength(18);
+  19              0x01,                   //bDescriptorType(Device);
+  20              0x00,0x02,              //bcdUSB(2.00);
+  21              0x00,                   //bDeviceClass(0);
+  22              0x00,                   //bDeviceSubClass0);
+  23              0x00,                   //bDeviceProtocol(0);
+  24              0x40,                   //bMaxPacketSize0(64);
+  25              0xbf,0x34,              //idVendor(34BF);
+  26              0x04,0xff,              //idProduct(FF04);
+  27              0x00,0x01,              //bcdDevice(1.00);
+  28              0x01,                   //iManufacturer(1);
+  29              0x02,                   //iProduct(2);
+  30              0x00,                   //iSerialNumber(0);
+  31              0x01,                   //bNumConfigurations(1);
+  32          };
+  33          
+  34          char code CONFIGDESC[41] =
+  35          {
+  36              0x09,                   //bLength(9);
+  37              0x02,                   //bDescriptorType(Configuration);
+  38              0x29,0x00,              //wTotalLength(41);
+  39              0x01,                   //bNumInterfaces(1);
+  40              0x01,                   //bConfigurationValue(1);
+  41              0x00,                   //iConfiguration(0);
+  42              0x80,                   //bmAttributes(BUSPower);
+  43              0x32,                   //MaxPower(100mA);
+  44          
+  45              0x09,                   //bLength(9);
+  46              0x04,                   //bDescriptorType(Interface);
+  47              0x00,                   //bInterfaceNumber(0);
+  48              0x00,                   //bAlternateSetting(0);
+  49              0x01,                   //bNumEndpoints(1);
+  50              0x03,                   //bInterfaceClass(HID);
+  51              0x01,                   //bInterfaceSubClass(Boot);
+  52              0x02,                   //bInterfaceProtocol(Mouse);
+  53              0x00,                   //iInterface(0);
+  54          
+C51 COMPILER V9.01   USB_DESC                                                              08/19/2023 22:41:15 PAGE 2   
+
+  55              0x09,                   //bLength(9);
+  56              0x21,                   //bDescriptorType(HID);
+  57              0x01,0x01,              //bcdHID(1.01);
+  58              0x00,                   //bCountryCode(0);
+  59              0x01,                   //bNumDescriptors(1);
+  60              0x22,                   //bDescriptorType(HID Report);
+  61              0x32,0x00,              //wDescriptorLength(50);
+  62          
+  63              0x07,                   //bLength(7);
+  64              0x05,                   //bDescriptorType(Endpoint);
+  65              0x81,                   //bEndpointAddress(EndPoint1 as IN);
+  66              0x03,                   //bmAttributes(Interrupt);
+  67              0x03,0x00,              //wMaxPacketSize(3);
+  68              0x0a,                   //bInterval(10ms);
+  69          };
+  70          
+  71          /*
+  72          Input Report:
+  73          0   Buttons (D0:LButton D1:RButton D2:MButton [D3:D7]:Pad)
+  74          1       X displacement (>0:right; <0:left)
+  75          2       Y displacement (>0:down; <0:up)
+  76          */
+  77          char code HIDREPORTDESC[50] =
+  78          {
+  79              0x05,0x01,              //USAGE_PAGE(Generic Desktop);
+  80              0x09,0x02,              //USAGE(Mouse);
+  81              0xa1,0x01,              //COLLECTION(Application);
+  82              0x09,0x01,              //  USAGE(Pointer);
+  83              0xa1,0x00,              //  COLLECTION(Physical);
+  84              0x05,0x09,              //    USAGE_PAGE(Buttons);
+  85              0x19,0x01,              //    USAGE_MINIMUM(1);
+  86              0x29,0x03,              //    USAGE_MAXIMUM(3);
+  87              0x15,0x00,              //    LOGICAL_MINIMUM(0);
+  88              0x25,0x01,              //    LOGICAL_MAXIMUM(1);
+  89              0x75,0x01,              //    REPORT_SIZE(1);
+  90              0x95,0x03,              //    REPORT_COUNT(3);
+  91              0x81,0x02,              //    INPUT(Data,Variable,Absolute);
+  92              0x75,0x05,              //    REPORT_SIZE(5);
+  93              0x95,0x01,              //    REPORT_COUNT(1);
+  94              0x81,0x01,              //    INPUT(Constant);
+  95              0x05,0x01,              //    USAGE_PAGE(Generic Desktop);
+  96              0x09,0x30,              //    USAGE(X);
+  97              0x09,0x31,              //    USAGE(Y);
+  98              0x15,0x81,              //    LOGICAL_MINIMUM(-127);
+  99              0x25,0x7f,              //    LOGICAL_MAXIMUM(127);
+ 100              0x75,0x08,              //    REPORT_SIZE(8);
+ 101              0x95,0x02,              //    REPORT_COUNT(2);
+ 102              0x81,0x06,              //    INPUT(Data, Variable, Relative);
+ 103              0xc0,                   //  END_COLLECTION;
+ 104              0xc0,                   //END_COLLECTION;
+ 105          };
+ 106          
+ 107          char code LANGIDDESC[4] =
+ 108          {
+ 109              0x04,0x03,
+ 110              0x09,0x04,
+ 111          };
+ 112          
+ 113          char code MANUFACTDESC[8] =
+ 114          {
+ 115              0x08,0x03,
+ 116              'S',0,
+C51 COMPILER V9.01   USB_DESC                                                              08/19/2023 22:41:15 PAGE 3   
+
+ 117              'T',0,
+ 118              'C',0,
+ 119          };
+ 120          
+ 121          char code PRODUCTDESC[28] =
+ 122          {
+ 123              0x1c,0x03,
+ 124              'S',0,
+ 125              'T',0,
+ 126              'C',0,
+ 127              ' ',0,
+ 128              'U',0,
+ 129              'S',0,
+ 130              'B',0,
+ 131              ' ',0,
+ 132              'M',0,
+ 133              'o',0,
+ 134              'u',0,
+ 135              's',0,
+ 136              'e',0,
+ 137          };
+ 138          
+ 139          char code PACKET0[2] = 
+ 140          {
+ 141              0, 0,
+ 142          };
+ 143          
+ 144          char code PACKET1[2] = 
+ 145          {
+ 146              1, 0,
+ 147          };
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =    153    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
