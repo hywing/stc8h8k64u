@@ -5,6 +5,17 @@
 - led
 - key
 - int
+
+INT0 -> P3.2
+
+INT1 -> P3.3
+
+INT2 -> P3.6
+
+INT3 -> P3.7
+
+INT4 -> P3.0
+
 - pwm
 - uart
 - rtc
